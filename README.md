@@ -14,6 +14,7 @@ Plugin WordPress siap instal untuk:
 ## Penggunaan
 1. Buka menu **Settings > WordSec Hide Admin**.
 2. Atur:
+   - **Aktifkan Fitur Hide Admin** (checkbox ON/OFF).
    - **Login Slug Baru** (contoh `inibukanlogin`).
    - **Mode Redirect wp-admin**:
      - Arahkan ke `/404`.
@@ -30,5 +31,6 @@ Contoh:
 
 ## Catatan
 - Simpan URL login baru Anda agar tidak kehilangan akses.
+- Jika fitur dimatikan, login kembali menggunakan URL default WordPress.
 - Endpoint `wp-admin/admin-ajax.php` dan `wp-admin/admin-post.php` tetap diizinkan untuk menjaga kompatibilitas fitur front-end.
 - Plugin ini fokus fase awal: hide login + redirect proteksi `wp-admin`.

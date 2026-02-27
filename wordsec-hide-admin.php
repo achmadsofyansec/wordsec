@@ -60,6 +60,7 @@ final class WordSec_Hide_Admin_Plugin
         return wp_parse_args(
             $saved,
             array(
+                'feature_enabled' => '1',
                 'login_slug' => 'inibukanlogin',
                 'admin_redirect_mode' => '404',
                 'admin_redirect_url' => home_url('/404'),
@@ -90,6 +91,15 @@ final class WordSec_Hide_Admin_Plugin
         return home_url('/' . $this->get_login_slug() . '/');
     }
 
+    /**
+     * @return bool
+     */
+    public function is_feature_enabled()
+    {
+        $options = $this->get_options();
+        return isset($options['feature_enabled']) && '1' === (string) $options['feature_enabled'];
+    }
+
     public function register_rewrite_rule()
     {
         add_rewrite_rule('^' . preg_quote($this->get_login_slug(), '/') . '/?$', 'index.php?wordsec_login=1', 'top');
@@ -107,6 +117,10 @@ final class WordSec_Hide_Admin_Plugin
 
     public function maybe_render_custom_login()
     {
+        if (!$this->is_feature_enabled()) {
+            return;
+        }
+
         if ((int) get_query_var('wordsec_login') !== 1) {
             return;
         }
@@ -120,6 +134,10 @@ final class WordSec_Hide_Admin_Plugin
 
     public function maybe_block_default_paths()
     {
+        if (!$this->is_feature_enabled()) {
+            return;
+        }
+
         if (is_user_logged_in()) {
             return;
         }
@@ -174,6 +192,10 @@ final class WordSec_Hide_Admin_Plugin
      */
     public function filter_login_url($login_url, $redirect, $force_reauth)
     {
+        if (!$this->is_feature_enabled()) {
+            return $login_url;
+        }
+
         $custom_login_url = $this->get_custom_login_url();
 
         if (!empty($redirect)) {
@@ -214,6 +236,14 @@ final class WordSec_Hide_Admin_Plugin
         );
 
         add_settings_field(
+            'feature_enabled',
+            __('Aktifkan Fitur Hide Admin', 'wordsec-hide-admin'),
+            array($this, 'render_feature_enabled_field'),
+            'wordsec-hide-admin',
+            'wordsec_hide_admin_main'
+        );
+
+        add_settings_field(
             'login_slug',
             __('Login Slug Baru', 'wordsec-hide-admin'),
             array($this, 'render_login_slug_field'),
@@ -247,6 +277,7 @@ final class WordSec_Hide_Admin_Plugin
         $old = $this->get_options();
 
         $clean = array(
+            'feature_enabled' => isset($input['feature_enabled']) ? '1' : '0',
             'login_slug' => isset($input['login_slug']) ? sanitize_title((string) $input['login_slug']) : 'inibukanlogin',
             'admin_redirect_mode' => (isset($input['admin_redirect_mode']) && 'custom' === $input['admin_redirect_mode']) ? 'custom' : '404',
             'admin_redirect_url' => isset($input['admin_redirect_url']) ? esc_url_raw((string) $input['admin_redirect_url']) : home_url('/404'),
@@ -266,6 +297,25 @@ final class WordSec_Hide_Admin_Plugin
         }
 
         return $clean;
+    }
+
+    public function render_feature_enabled_field()
+    {
+        $options = $this->get_options();
+        ?>
+        <label>
+            <input
+                type="checkbox"
+                name="<?php echo esc_attr(self::OPTION_KEY); ?>[feature_enabled]"
+                value="1"
+                <?php checked(isset($options['feature_enabled']) ? $options['feature_enabled'] : '1', '1'); ?>
+            />
+            <?php esc_html_e('Aktifkan perlindungan hide login dan redirect wp-admin.', 'wordsec-hide-admin'); ?>
+        </label>
+        <p class="description">
+            <?php esc_html_e('Jika dinonaktifkan, WordPress akan kembali menggunakan endpoint login default.', 'wordsec-hide-admin'); ?>
+        </p>
+        <?php
     }
 
     public function render_login_slug_field()
@@ -339,7 +389,7 @@ final class WordSec_Hide_Admin_Plugin
             <hr />
             <p>
                 <strong><?php esc_html_e('Login URL aktif:', 'wordsec-hide-admin'); ?></strong>
-                <code><?php echo esc_html($this->get_custom_login_url()); ?></code>
+                <code><?php echo esc_html($this->is_feature_enabled() ? $this->get_custom_login_url() : wp_login_url()); ?></code>
             </p>
         </div>
         <?php
@@ -353,6 +403,7 @@ final class WordSec_Hide_Admin_Plugin
             update_option(
                 self::OPTION_KEY,
                 array(
+                    'feature_enabled' => '1',
                     'login_slug' => 'inibukanlogin',
                     'admin_redirect_mode' => '404',
                     'admin_redirect_url' => home_url('/404'),
